@@ -6,7 +6,7 @@ class doso_weap:weapon abstract{
 	class<doso_weap_w> worldwpn;	//the world weapon to spawn in world!
 	
 	vector2 initangle;	//the readied angle to initialize to
-	vector2 initpos;	//the readied position to initialize to
+	vector3 initpos;	//the readied position to initialize to
 	
 	property world:worldwpn;
 	property angle:initangle;
@@ -16,12 +16,12 @@ class doso_weap:weapon abstract{
 		doso_weap.world "doso_weap_w";
 		//angle and pos of all zero is considered to be straight ahead and pointed out; ie, a fuck-off stance
 		doso_weap.angle (0.0, 0.0);
-		doso_weap.pos (0.0, 0.0);
+		doso_weap.pos (0.0, 0.0, 0.0);
 	}
 	
 	doso_weap_w child;
-	vector2 weapangle;
-	vector2 weappos;
+	vector2 wpnangle;
+	vector3 wpnpos;
 	
 	states{
 	spawn:
@@ -30,13 +30,16 @@ class doso_weap:weapon abstract{
 	select:
 		TNT1 A 0 {
 			invoker.child = doso_weap_w.create(invoker.worldwpn,invoker);
-			invoker.weapangle = invoker.initangle;
-			invoker.weappos = invoker.initpos;
+			invoker.wpnangle = invoker.initangle;
+			invoker.wpnpos = invoker.initpos;
 		}
-		TNT1 A 0 A_Raise();
+		TNT1 A 1 A_Raise();
 		wait;
 	deselect:
-		TNT1 A 0 A_Lower();
+		TNT1 A 0 {
+			invoker.child.destroy();
+		}
+		TNT1 A 1 A_Lower();
 		wait;
 	ready:
 		TNT1 A 1 A_WeaponReady(WRF_NOFIRE);
@@ -65,6 +68,7 @@ class doso_weap_w:actor abstract{
 	uint bladewidth;//width of the weapon's bladed segment, again in dmu
 	
 	uint8 maxextend;//how much farther beyond arm's length the weapon can be extended
+	float restdist;	//how far from the player the weapon rests
 	
 	name wpnsprite;	//pretty self explanatory. weapons can change these on the fly if they really want to.
 	
@@ -74,6 +78,7 @@ class doso_weap_w:actor abstract{
 	property size:wpnsize,wpnwidth;
 	property sharpness:tipsharp,bldsharp;
 	property maxextend:maxextend;
+	property restdistance:restdist;
 	property sprite:wpnsprite;
 	
 	default{
@@ -81,6 +86,7 @@ class doso_weap_w:actor abstract{
 		+FLATSPRITE
 		+ROLLSPRITE
 		+NOCLIP
+		+NOGRAVITY
 		
 		//doso_weap_w defaults
 		doso_weap_w.mass 1.0,128;
@@ -89,6 +95,7 @@ class doso_weap_w:actor abstract{
 		doso_weap_w.size 24,8;
 		doso_weap_w.sharpness 0.15,0.15;
 		doso_weap_w.maxextend 1;
+		doso_weap_w.restdistance 0;
 		doso_weap_w.sprite 'tnt1';
 	}
 	
@@ -97,12 +104,25 @@ class doso_weap_w:actor abstract{
 	halfsworder owner;
 	
 	static doso_weap_w Create(class<doso_weap_w> classname,doso_weap parent){
-		doso_weap_w this = doso_weap_w(spawn(classname,parent.owner.pos,ALLOW_REPLACE));
+		doso_weap_w this = doso_weap_w(spawn(classname,parent.owner.pos + (0.0, 0.0, parent.owner.height/2),ALLOW_REPLACE));
 		this.parent = parent;
 		this.owner = halfsworder(parent.owner);
 		this.angle = parent.owner.angle;
 		this.pitch = parent.owner.pitch;
+		this.changesprite();
 		return this;
+	}
+	
+	override void Tick(){
+		super.tick();
+		vector2 rotofs = RotateVector(parent.wpnpos.xy + (8.0 + restdist, 0.0),owner.angle);
+		vector3 wpnofs = (rotofs.x, rotofs.y, parent.wpnpos.z);
+		SetOrigin(owner.pos + (0.0, 0.0, owner.height/2) + wpnofs, true);
+		
+		angle = normalize180(owner.angle + parent.wpnangle.x);
+		pitch = parent.wpnangle.y;
+		//I wanted to affect the roll to fix the issue of the weapon not quite looking like it's directed toward the
+		//line in front of the player but roll doesn't work as I expected it to here so whatever
 	}
 	
 	void ChangeSprite(name spritename = "null"){
@@ -111,5 +131,11 @@ class doso_weap_w:actor abstract{
 		}
 		wpnsprite = spritename;
 		sprite = GetSpriteIndex(wpnsprite);
+	}
+	
+	states{
+	spawn:
+		#### Z 1;
+		loop;
 	}
 }

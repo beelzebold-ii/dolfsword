@@ -4,9 +4,12 @@
 class halfsworder:doomplayer{
 	default{
 		player.startitem "doso_longsword",1;
+		player.startitem "doso_halberd",1;
 		player.displayname "Dolf Sworder";
 		player.forwardmove 0.4,0.55;
 		player.sidemove 0.4,0.45;
+		
+		radius 18;
 	}
 }
 

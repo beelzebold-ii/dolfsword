@@ -7,6 +7,9 @@
 class doso_longsword:doso_weap{
 	default{
 		doso_weap.world "doso_longsword_w";
+		doso_weap.angle (-45, -55);
+		doso_weap.pos (0.0, -8., 0.0);
+		weapon.slotnumber 2;
 	}
 	states{
 	spawn:
@@ -23,6 +26,12 @@ class doso_longsword_w:doso_weap_w{
 		doso_weap_w.size 42,15;
 		doso_weap_w.sharpness 0.7,0.75;
 		doso_weap_w.maxextend 1;
+		doso_weap_w.restdistance 10;
 		doso_weap_w.sprite 'LSRD';
+	}
+	states{
+	spawn:
+		LSRD Z 1;
+		loop;
 	}
 }
