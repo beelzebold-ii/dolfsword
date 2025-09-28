@@ -7,8 +7,8 @@ class halfsworder:doomplayer{
 		player.startitem "doso_longsword",1;
 		player.startitem "doso_halberd",1;
 		player.displayname "Dolf Sworder";
-		player.forwardmove 0.4,0.55;
-		player.sidemove 0.4,0.45;
+		player.forwardmove 0.6,0.3;
+		player.sidemove 0.7,0.35;
 		
 		radius 18;
 	}
@@ -36,14 +36,20 @@ class doso_inputhandler:eventhandler{
 			playerinfo pla = players[e.args[2]];
 			if(pla.readyweapon && pla.readyweapon is "doso_weap"){
 				let wep = doso_weap(pla.readyweapon);
+				if(!wep.child)
+					return;
+				
+				float x = e.args[0]*cvar.getcvar("doso_mousesens",pla).getfloat();
+				float y = e.args[1]*cvar.getcvar("doso_mousesens",pla).getfloat();
+				
 				if(pla.buttons & BT_ATTACK && pla.buttons & BT_ALTATTACK){
-					wep.rotatew(e.args[0],e.args[1]);
+					wep.rotatew(x,y);
 				}else{
 					if(pla.buttons & BT_ATTACK){
-						wep.swingw(e.args[0],e.args[1]);
+						wep.swingw(x,y);
 					}
 					if(pla.buttons & BT_ALTATTACK){
-						wep.movew(e.args[0],e.args[1]);
+						wep.movew(x,y);
 					}
 				}
 			}

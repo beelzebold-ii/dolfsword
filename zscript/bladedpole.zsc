@@ -2,12 +2,12 @@
 //~=========================~
 
 
-// THE HALBERD!
+// THE HALBERD
 // So Knightly!
 class doso_halberd:doso_weap{
 	default{
 		doso_weap.world "doso_halberd_w";
-		doso_weap.angle (-55, -67.5);
+		doso_weap.angle (-55, -45);
 		doso_weap.pos (0.0, -16., -8.0);
 		weapon.slotnumber 3;
 	}
@@ -27,6 +27,36 @@ class doso_halberd_w:doso_weap_w{
 		doso_weap_w.maxextend 18;
 		doso_weap_w.restdistance 18;
 		doso_weap_w.sharpness 0.85,0.65;
+		doso_weap_w.sprite 'HLBD';
+	}
+}
+
+
+// THE SPEAR
+// So Cheap...
+class doso_spear:doso_weap{
+	default{
+		doso_weap.world "doso_spear_w";
+		doso_weap.angle (-55, -67.5);
+		doso_weap.pos (0.0, -16., -8.0);
+		weapon.slotnumber 3;
+	}
+	states{
+	spawn:
+		HLBD S -1;
+		stop;
+	}
+}
+
+class doso_spear_w:doso_weap_w{
+	default{
+		doso_weap_w.mass 0.56,130;
+		doso_weap_w.blade 16,4;
+		doso_weap_w.bladestart 0;
+		doso_weap_w.size 56,2;
+		doso_weap_w.maxextend 18;
+		doso_weap_w.restdistance 18;
+		doso_weap_w.sharpness 0.9,0.55;
 		doso_weap_w.sprite 'HLBD';
 	}
 }

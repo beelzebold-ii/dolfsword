@@ -1,0 +1,1 @@
+user float doso_mousesens = 0.5;
