@@ -1,5 +1,6 @@
 //DOLF SWORD
 //half sword in doom?
+version "4.10"
 
 class halfsworder:doomplayer{
 	default{
@@ -17,3 +18,35 @@ class halfsworder:doomplayer{
 
 #include "zscript/swords.zsc"
 #include "zscript/bladedpole.zsc"
+
+class doso_inputhandler:eventhandler{
+	override bool InputProcess(inputevent e){
+		if(e.type == InputEvent.TYPE_MOUSE){
+			if(players[consoleplayer].buttons & BT_ATTACK || players[consoleplayer].buttons & BT_ALTATTACK){
+				SendNetworkEvent("DoSo_MouseEvent",e.mousex,e.mousey,consoleplayer);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	override void NetworkProcess(consoleevent e){
+		if(e.name=="DoSo_MouseEvent"){
+			//console.printf("DoSo_MouseEvent x"..e.args[0].." y"..e.args[1]);
+			playerinfo pla = players[e.args[2]];
+			if(pla.readyweapon && pla.readyweapon is "doso_weap"){
+				let wep = doso_weap(pla.readyweapon);
+				if(pla.buttons & BT_ATTACK && pla.buttons & BT_ALTATTACK){
+					wep.rotatew(e.args[0],e.args[1]);
+				}else{
+					if(pla.buttons & BT_ATTACK){
+						wep.swingw(e.args[0],e.args[1]);
+					}
+					if(pla.buttons & BT_ALTATTACK){
+						wep.movew(e.args[0],e.args[1]);
+					}
+				}
+			}
+		}
+	}
+}

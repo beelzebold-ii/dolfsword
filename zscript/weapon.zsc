@@ -1,6 +1,15 @@
 // ABSTRACT BASE CLASSES FOR WEAPONS AND WORLDWEAPONS
 //~===================================================~
 
+//how far your arms can reach, in map units
+const DOSO_ARMSREACH = 18;
+//maximum yaw deviation from front of your weapon
+const DOSO_MAXANGLE = 115.0;
+//lowest pitch of your weapon
+const DOSO_MAXPITCH = 85.0;
+//highest pitch of your weapon
+const DOSO_MINPITCH =-135.0;
+
 //base class from which weapon items will inherit
 class doso_weap:weapon abstract{
 	class<doso_weap_w> worldwpn;	//the world weapon to spawn in world!
@@ -22,6 +31,56 @@ class doso_weap:weapon abstract{
 	doso_weap_w child;
 	vector2 wpnangle;
 	vector3 wpnpos;
+	
+	const SENS_SWINGTRA = 0.3;
+	const SENS_SWINGANG = 1.6;
+	const SENS_MOVE		= 0.5;
+	const SENS_ROTATE	= 1.0;
+	
+	void rotatew(float x,float y){
+		wpnangle -= (x*SENS_ROTATE,y*SENS_ROTATE);
+		
+		boundw();
+	}
+	void swingw(float x,float y){
+		wpnpos += (0.0,-x*SENS_SWINGTRA,y*SENS_SWINGTRA);
+		wpnangle -= (x*SENS_SWINGANG,y*SENS_SWINGANG);
+		
+		boundw();
+	}
+	void movew(float x,float y){
+		wpnpos += (y*SENS_MOVE,-x*SENS_MOVE,0.0);
+		
+		boundw();
+	}
+	
+	//ensure the weapon is within its allowed boundries
+	void boundw(){
+		if(wpnpos.x< -(child.maxextend))
+			wpnpos.x = -(child.maxextend);
+		if(wpnpos.x> DOSO_ARMSREACH + (child.maxextend))
+			wpnpos.x = DOSO_ARMSREACH + (child.maxextend);
+		
+		if(wpnpos.y> DOSO_ARMSREACH)
+			wpnpos.y = DOSO_ARMSREACH;
+		if(wpnpos.y< -DOSO_ARMSREACH)
+			wpnpos.y = -DOSO_ARMSREACH;
+		
+		if(wpnpos.z> DOSO_ARMSREACH)
+			wpnpos.z = DOSO_ARMSREACH;
+		if(wpnpos.z< -DOSO_ARMSREACH)
+			wpnpos.z = -DOSO_ARMSREACH;
+		
+		if(wpnangle.x> DOSO_MAXANGLE)
+			wpnangle.x = DOSO_MAXANGLE;
+		if(wpnangle.x< -DOSO_MAXANGLE)
+			wpnangle.x = -DOSO_MAXANGLE;
+		
+		if(wpnangle.y> DOSO_MAXPITCH)
+			wpnangle.y = DOSO_MAXPITCH;
+		if(wpnangle.y< DOSO_MINPITCH)
+			wpnangle.y = DOSO_MINPITCH;
+	}
 	
 	states{
 	spawn:
