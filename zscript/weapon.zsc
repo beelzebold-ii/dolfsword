@@ -29,9 +29,9 @@ class doso_weap:weapon abstract{
 		stop;
 	select:
 		TNT1 A 0 {
-			child = doso_weap_w.create(worldwpn,self);
-			weapangle = initangle;
-			weappos = initpos;
+			invoker.child = doso_weap_w.create(invoker.worldwpn,invoker);
+			invoker.weapangle = invoker.initangle;
+			invoker.weappos = invoker.initpos;
 		}
 		TNT1 A 0 A_Raise();
 		wait;
@@ -39,8 +39,11 @@ class doso_weap:weapon abstract{
 		TNT1 A 0 A_Lower();
 		wait;
 	ready:
-		TNT1 A 1 A_WeaponReady();
+		TNT1 A 1 A_WeaponReady(WRF_NOFIRE);
 		loop;
+	fire:
+		TNT1 A 0;
+		goto ready;
 	}
 }
 
@@ -96,7 +99,7 @@ class doso_weap_w:actor abstract{
 	static doso_weap_w Create(class<doso_weap_w> classname,doso_weap parent){
 		doso_weap_w this = doso_weap_w(spawn(classname,parent.owner.pos,ALLOW_REPLACE));
 		this.parent = parent;
-		this.owner = parent.owner;
+		this.owner = halfsworder(parent.owner);
 		this.angle = parent.owner.angle;
 		this.pitch = parent.owner.pitch;
 		return this;

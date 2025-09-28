@@ -5,9 +5,12 @@ class halfsworder:doomplayer{
 	default{
 		player.startitem "doso_longsword",1;
 		player.displayname "Dolf Sworder";
+		player.forwardmove 0.4,0.55;
+		player.sidemove 0.4,0.45;
 	}
 }
 
-#include "zscript/weapons.zsc"
+#include "zscript/weapon.zsc"
 
 #include "zscript/swords.zsc"
+#include "zscript/bladedpole.zsc"

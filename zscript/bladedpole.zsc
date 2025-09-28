@@ -17,7 +17,7 @@ class doso_halberd:doso_weap{
 
 class doso_halberd_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 2.05,168;
+		doso_weap_w.mass 2.06,168;
 		doso_weap_w.blade 42,10;
 		doso_weap_w.bladestart 29;
 		doso_weap_w.size 60,3;
