@@ -103,10 +103,16 @@ class doso_weap:weapon abstract{
 		TNT1 A 1 A_Lower();
 		wait;
 	ready:
-		TNT1 A 1 A_WeaponReady(WRF_NOFIRE);
+		TNT1 A 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD);
 		loop;
 	fire:
 		TNT1 A 0;
+		goto ready;
+	reload:
+		TNT1 A 2 {
+			invoker.wpnangle = invoker.initangle;
+			invoker.wpnpos = invoker.initpos;
+		}
 		goto ready;
 	}
 }
@@ -116,6 +122,7 @@ class doso_weap_w:actor abstract{
 	//here goes property variables and defaults
 	double wpnmass;	//mass in kg
 	uint8 massdist;	//how far out of 255 along the weapon's length the center of mass is
+	double massgrad;//how much the mass fluctuates along the length, 0.0 = 100% mass everywhere, 1.0 = 200% at center, 0% at max dist
 	
 	uint8 bladecov;	//how much out of 255 of the weapon that is bladed (from the tip to the hands)
 	uint8 bladestrt;//if non-zero, where the blade part of the weapon starts (from the tip to the hands)
@@ -133,7 +140,7 @@ class doso_weap_w:actor abstract{
 	
 	name wpnsprite;	//pretty self explanatory. weapons can change these on the fly if they really want to.
 	
-	property mass:wpnmass,massdist;
+	property mass:wpnmass,massdist,massgrad;
 	property blade:bladecov,bladewidth;
 	property bladestart:bladestrt;
 	property size:wpnsize,wpnwidth;
@@ -148,10 +155,11 @@ class doso_weap_w:actor abstract{
 		+ROLLSPRITE
 		+NOCLIP
 		+NOGRAVITY
+		-SOLID
 		
 		//doso_weap_w defaults
 		//default is basically a brick
-		doso_weap_w.mass 1.0,128;
+		doso_weap_w.mass 1.0,128,0.0;
 		doso_weap_w.blade 0,8;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 24,8;
@@ -179,12 +187,43 @@ class doso_weap_w:actor abstract{
 	float weaponextension(){
 		return max(0,(distance2d(owner) - (restdist - 8)) - DOSO_ARMSREACH);
 	}
+	//return the mass at a given point along the weapon in dmu
+	double massatpoint(double dist){
+		double comradius = wpnsize*(massdist/255.0);
+		//distance from center of mass in multiples of wpnsize
+		double distfromcom = abs(comradius - dist)/wpnsize;
+		//center it on zero
+		distfromcom -= 0.5;
+		
+		double masshere = wpnmass;
+		double maxdev = 1.0*massgrad;
+		return masshere * (1.0 - maxdev*distfromcom);
+	}
+	
+	//draw particles for a linetrace's start and end.
+	static void drawlineparticles(in flinetracedata ln){
+		fspawnparticleparams particle;
+		particle.startalpha = 0.5;
+		particle.size = 4.;
+		particle.lifetime = 1;
+		particle.flags = SPF_FULLBRIGHT|SPF_REPLACE;
+		
+		particle.color1 = color(255,255,0);
+		if(ln.hittype!=TRACE_HITNONE)
+			particle.color1 = color(255,0,0);
+		particle.pos = ln.hitlocation;
+		level.spawnparticle(particle);
+		
+		particle.color1 = color(127,255,0);
+		particle.pos -= ln.hitdir * ln.distance;
+		level.spawnparticle(particle);
+	}
 	
 	//map units per tic squared at 1kg
-	const POS_MAXACCEL = 3;
+	const POS_MAXACCEL = 4;
 	//degrees per tic squared at 1kg and radius 32 (something like one meter)
 	//and with a grip radius of 5
-	const ANG_MAXACCEL = 10.0;
+	const ANG_MAXACCEL = 16.0;
 	//velocities multiplied by these every tic
 	const P_DECCEL_COEFF = 0.7;
 	const A_DECCEL_COEFF = 0.85;
@@ -197,6 +236,10 @@ class doso_weap_w:actor abstract{
 	
 	override void Tick(){
 		super.tick();
+		
+		//delete if no longer selected for some reason
+		if(owner.player.readyweapon!=parent || !parent.owner)
+			destroy();
 		
 		//spawn the marker at the desired position
 		doso_marker.create(restdist,parent);
@@ -227,9 +270,16 @@ class doso_weap_w:actor abstract{
 				dist /= (force/P_DECCEL_COEFF)*2;
 				force *= dist;
 			}
+			//if in thrust mode, exert more force.
+			if(owner.player.buttons & BT_ALTATTACK)
+				force *= 3.;
 			//if we're farther than the arm's length + the weapon's available extension, pull much harder
-			if(weaponextension()>=maxextend){
-				force *= 1.05 + (weaponextension() - maxextend)/100;
+			if(weaponextension()>=maxextend*1.5){
+				force *= 1.05 + (weaponextension() - maxextend*1.5)/90;
+				if(distance2d(owner)>(DOSO_ARMSREACH + maxextend)*3.){
+					force = 0.;
+					SetOrigin(parent.owner.pos + (0.0, 0.0, parent.owner.height/2),true);
+				}
 			}
 			movevec /= movevec.length();
 			movevec *= force;
@@ -268,7 +318,186 @@ class doso_weap_w:actor abstract{
 		angle += vel_angle.x;
 		pitch += vel_angle.y;
 		
-		//now for collision.
+		//now for collision detection.
+		flinetracedata line_center;
+		flinetracedata line_haft_l;
+		flinetracedata line_haft_r;
+		flinetracedata line_blad_l;
+		flinetracedata line_blad_r;
+		flinetracedata line_spik_l;
+		flinetracedata line_spik_r;
+		
+		double haft_len;
+		double blad_start;
+		double blad_len;
+		double spik_start;
+		double spik_len;
+		
+		vector2 ofs_xy;
+		vector2 ofs_z;
+		vector3 lineoffset;
+		
+		//disable the owner's solidity before tests and reenable it after.
+		owner.bsolid = false;
+		owner.bshootable = false;
+		
+		//center line
+		LineTrace(angle,wpnsize,pitch,TRF_NOSKY|TRF_SOLIDACTORS,data:line_center);
+		//for some fucked off dumbass reason the fucking lines refuse to offset in any way that I want them to
+		//so center line it is.
+		
+		//owner become solid again.
+		owner.bsolid = true;
+		owner.bshootable = true;
+		
+		//draw some debug particles for me
+		if(doso_debug){
+			drawlineparticles(line_center);
+		}
+		if(line_center.hittype!=TRACE_HITNONE){
+			wpncollide(line_center);
+		}
+		
+		//drip blood!
+		trydripblood();
+	}
+	
+	//if the weapon has collided with something, we run this function
+	virtual void wpncollide(in flinetracedata ln){
+		//SetOrigin(pos - vel,false);
+		angle -= vel_angle.x;
+		pitch -= vel_angle.y;
+		if(ln.hittype==TRACE_HITACTOR){
+			float vel_p = vel.length();
+			float vel_a = (vel_angle.length() * (3.1415/180))*ln.distance;
+			
+			float impact_vel = vel_p + vel_a;
+			
+			vel *= 0.015;
+			vel_angle *= 0.2;
+			
+			impact_vel /= 32.; //meters/tic
+			impact_vel *= 35.; //meters/sec
+			
+			float force = impact_vel * massatpoint(ln.distance);
+			
+			if(impact_vel > 12. && doso_debug)
+				A_Log(string.format(gettag().." struck "..ln.hitactor.gettag().." with net speed of %.1f m/s and mass of %.2fkg with a force of %dN",impact_vel,massatpoint(ln.distance),force));
+			
+			hitactor(ln.hitactor,force,ln.distance,ln.hitlocation);
+		}else{
+			if( (vel.length(),vel_angle.length()).length() > 12. ){
+				for(int i=1;i< floor((vel.length(),vel_angle.length()).length()*2 - 18);i++){
+					fspawnparticleparams prt;
+					prt.color1 = color(255,191,0);
+					prt.pos = ln.hitlocation;
+					prt.vel = (frandom(-5.,5.),frandom(-5.,5.),frandom(2.,9.));
+					prt.accel = (0.,0.,-1.);
+					prt.size = 2;
+					prt.lifetime = 10;
+					prt.startalpha = 0.7;
+					prt.flags = SPF_FULLBRIGHT;
+					level.SpawnParticle(prt);
+				}
+			}
+			vel = (0.,0.,0.);
+			vel_angle = (0.,0.);
+		}
+	}
+	
+	//hit this actor
+	virtual void hitactor(actor hit,float force,double wpnpos,vector3 hitpos){
+		double sharpness = 0.1;
+		float bladestart = wpnsize * (1.0 - ((bladestrt + bladecov) / 255.));
+		float bladeend = wpnsize * (1.0 - ((bladestrt) / 255.));
+		bool hitblade;
+		bool hitpoint;
+		if(wpnpos > bladestart && wpnpos < bladeend)
+			hitblade = true;
+		if(wpnsize - wpnpos < (wpnwidth+1)*tipsharp){
+			hitpoint = true;
+			hitblade = false;
+			force *= 1.7 + tipsharp;
+		}
+		
+		if(hitblade){
+			if(doso_debug && force > 30)
+				A_Log("hit: blade");
+			sharpness = bldsharp;
+		}
+		if(hitpoint){
+			if(doso_debug && force > 30)
+				A_Log("hit: tip");
+			sharpness = tipsharp;
+		}
+		if(!(hitblade || hitpoint) && doso_debug && force > 30)
+			A_Log("hit: haft");
+		
+		float bluntdmg = (((force - 5.) * (1.0 - sharpness + 0.1)) ** 1.4) * 0.1;
+		float sharpdmg = ((force + 2) * sharpness) ** 0.8;
+		bluntdmg *= 0.5;
+		int totdmg = bluntdmg + sharpdmg;
+		//discard collisions too light as they're probably just clang anyway
+		if(totdmg < 10 || force < 15)
+			return;
+		if(doso_debug)
+			A_Log(string.format("total strike dmg: %d (%d blunt, %d sharp)",totdmg,bluntdmg,sharpdmg));
+		int bloodpartcl = sharpdmg + bluntdmg/3;
+		if(totdmg > hit.health)
+			bloodpartcl = bloodpartcl * 4 + 8;
+		if(bloodpartcl>6){
+			for(int i=1;i<bloodpartcl;i++){
+				fspawnparticleparams prt;
+				prt.color1 = color(0x66,0,0);
+				prt.pos = hitpos;
+				prt.vel = (frandom(-2.,2.),frandom(-2.,2.),frandom(-1.,1.)) * (1.0 + i/50);
+				prt.accel = (0.,0.,-.8);
+				prt.size = random(4,12) + floor(i/4);
+				prt.lifetime = random(10,16) + i;
+				prt.startalpha = 0.9;
+				level.SpawnParticle(prt);
+			}
+		}
+		for(int i=0;i<=2;i++){
+			if(blood[i].blood==0){
+				blood[i].blood = bloodpartcl/2;
+				blood[i].timer = 1;
+				blood[i].weappos = wpnpos;
+				break;
+			}
+			if(i==2){
+				blood[random(0,2)].blood += bloodpartcl/2;
+			}
+		}
+		hit.damagemobj(self,owner,bluntdmg,"blunt");
+		hit.damagemobj(self,owner,sharpdmg,"blade");
+	}
+	
+	//blood drip stuff
+	blooddripspot blood[3];
+	void TryDripBlood(){
+		for(int i=0;i<=2;i++){
+			if(blood[i].blood > 0){
+				blood[i].timer--;
+				if(blood[i].timer<=0){
+					blood[i].timer = 40 - blood[i].blood;
+					blood[i].blood--;
+					
+					fspawnparticleparams prt;
+					prt.color1 = color(0x66,0,0);
+					vector2 ofz = angletovector(pitch,blood[i].weappos);
+					vector2 ofxy = angletovector(angle,1.);
+					vector3 bloodpos = (ofxy.x * ofz.x, ofxy.y * ofz.x, -ofz.y);
+					prt.pos = pos + bloodpos;
+					prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5));
+					prt.accel = (0.,0.,-.6);
+					prt.size = random(4,4+blood[i].blood/2);
+					prt.lifetime = random(10,16);
+					prt.startalpha = 0.9;
+					level.SpawnParticle(prt);
+				}
+			}
+		}
 	}
 	
 	void ChangeSprite(name spritename = "null"){
@@ -295,6 +524,7 @@ class doso_marker:actor{
 		+ROLLSPRITE
 		+NOCLIP
 		+NOGRAVITY
+		-SOLID
 		
 		//+BRIGHT
 		
@@ -303,7 +533,9 @@ class doso_marker:actor{
 	}
 	
 	static void Create(float restdist,doso_weap parent){
-	restdist-=1;
+		if(!parent || !parent.owner)
+			return;
+		restdist-=1;
 		vector2 rotofs = RotateVector(parent.wpnpos.xy + (8.0 + restdist, 0.0),parent.owner.angle);
 		vector3 wpnofs = (rotofs.x, rotofs.y, parent.wpnpos.z+1);
 		doso_marker this = doso_marker(spawn("doso_marker",parent.owner.pos + (0.0, 0.0, parent.owner.height/2) + wpnofs,ALLOW_REPLACE));
@@ -318,3 +550,10 @@ class doso_marker:actor{
 		stop;
 	}
 }
+
+//struct for blood drippers
+struct blooddripspot{
+	int blood;
+	float weappos;
+	int timer;
+};

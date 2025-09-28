@@ -8,7 +8,7 @@ class doso_longsword:doso_weap{
 	default{
 		doso_weap.world "doso_longsword_w";
 		doso_weap.angle (-45, -40);
-		doso_weap.pos (0.0, -8., 0.0);
+		doso_weap.pos (10., -8., 0.0);
 		weapon.slotnumber 2;
 	}
 	states{
@@ -20,14 +20,16 @@ class doso_longsword:doso_weap{
 
 class doso_longsword_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 1.37,36;
-		doso_weap_w.blade 250,6;
+		doso_weap_w.mass 1.37,36,0.3;
+		doso_weap_w.blade 225,6;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 42,15;
 		doso_weap_w.sharpness 0.7,0.75;
 		doso_weap_w.maxextend 4;
 		doso_weap_w.restdistance 10;
 		doso_weap_w.sprite 'LSRD';
+		
+		tag "Longsword";
 	}
 	states{
 	spawn:
@@ -55,7 +57,7 @@ class doso_rapier:doso_weap{
 
 class doso_rapier_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 0.96,4;
+		doso_weap_w.mass 0.96,16,0.32;
 		doso_weap_w.blade 250,2;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 38,16;
@@ -90,7 +92,7 @@ class doso_falchion:doso_weap{
 
 class doso_falchion_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 1.525,64;
+		doso_weap_w.mass 1.525,64,0.5;
 		doso_weap_w.blade 250,7;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 34,15;
