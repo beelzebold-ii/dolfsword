@@ -3,6 +3,8 @@
 
 //how far your arms can reach, in map units
 const DOSO_ARMSREACH = 18;
+//how wide the grip is by default (one hand)
+const DOSO_HANDWIDTH = 3.0;
 //maximum yaw deviation from front of your weapon
 const DOSO_MAXANGLE = 90.0;
 //lowest pitch of your weapon
@@ -173,9 +175,15 @@ class doso_weap_w:actor abstract{
 		return this;
 	}
 	
+	//return how much of the weapon's extension is being used, it's just distance from player - arm length
+	float weaponextension(){
+		return max(0,(distance2d(owner) - (restdist - 8)) - DOSO_ARMSREACH);
+	}
+	
 	//map units per tic squared at 1kg
 	const POS_MAXACCEL = 3;
 	//degrees per tic squared at 1kg and radius 32 (something like one meter)
+	//and with a grip radius of 5
 	const ANG_MAXACCEL = 10.0;
 	//velocities multiplied by these every tic
 	const P_DECCEL_COEFF = 0.7;
@@ -219,6 +227,10 @@ class doso_weap_w:actor abstract{
 				dist /= (force/P_DECCEL_COEFF)*2;
 				force *= dist;
 			}
+			//if we're farther than the arm's length + the weapon's available extension, pull much harder
+			if(weaponextension()>=maxextend){
+				force *= 1.05 + (weaponextension() - maxextend)/100;
+			}
 			movevec /= movevec.length();
 			movevec *= force;
 			vel += movevec;
@@ -232,6 +244,10 @@ class doso_weap_w:actor abstract{
 		//hopefully this works well enough.
 		if((deltaangle(angle,desired_angle),deltaangle(pitch,desired_pitch)).length()>6){
 			double torque = ANG_MAXACCEL;
+			//calculate radius of our grip from our pivot point.
+			float gripwidth = DOSO_HANDWIDTH + max(0,maxextend - weaponextension());
+			//torque is multiplied by grip width divided down so that torque is unchanged for a grip width of 5 units
+			torque *= gripwidth/5;
 			//we divide CoM radius by 32 to get it in something resembling meters.
 			double comradius = (wpnsize*(massdist/255.0)/32);
 			double momentinertia = wpnmass * comradius * comradius;
@@ -251,6 +267,8 @@ class doso_weap_w:actor abstract{
 		}
 		angle += vel_angle.x;
 		pitch += vel_angle.y;
+		
+		//now for collision.
 	}
 	
 	void ChangeSprite(name spritename = "null"){

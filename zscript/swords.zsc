@@ -25,7 +25,7 @@ class doso_longsword_w:doso_weap_w{
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 42,15;
 		doso_weap_w.sharpness 0.7,0.75;
-		doso_weap_w.maxextend 1;
+		doso_weap_w.maxextend 4;
 		doso_weap_w.restdistance 10;
 		doso_weap_w.sprite 'LSRD';
 	}
