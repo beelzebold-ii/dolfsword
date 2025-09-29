@@ -127,7 +127,7 @@ class doso_weap_w:actor abstract{
 	uint8 bladecov;	//how much out of 255 of the weapon that is bladed (from the tip to the hands)
 	uint8 bladestrt;//if non-zero, where the blade part of the weapon starts (from the tip to the hands)
 	
-	//note for sharpness: haft is considered to be 0.15 sharpness, which would need considerable force to wound.
+	//note for sharpness: haft is considered to be 0.1 sharpness, which would need considerable force to wound.
 	double tipsharp;//how sharp the tip of the weapon is. if 0, deemed to be unable to wound; if 1, deemed to be *very* thin/sharp
 	double bldsharp;//how sharp the blade is. if 0, deemed to be blunt and unable to wound; if 1, deemed to be very fine and sharp
 	
@@ -220,7 +220,7 @@ class doso_weap_w:actor abstract{
 	}
 	
 	//map units per tic squared at 1kg
-	const POS_MAXACCEL = 4;
+	const POS_MAXACCEL = 5.5;
 	//degrees per tic squared at 1kg and radius 32 (something like one meter)
 	//and with a grip radius of 5
 	const ANG_MAXACCEL = 16.0;
@@ -262,17 +262,17 @@ class doso_weap_w:actor abstract{
 			double force = POS_MAXACCEL;
 			if(wpnmass!=0)
 				force /= wpnmass;
-			//console.printf("vec to desired pos is "..level.vec3diff(pos,desired_position));
-			//turn this vector into a unit vector and then multiply it by POS_MAXACCEL
+			//turn this desired vector into a unit vector and then multiply it by POS_MAXACCEL
 			vector3 movevec = level.vec3diff(pos,desired_position);
+			//if in thrust mode, exert more force.
+			if(owner.player.buttons & BT_ALTATTACK)
+				force *= 2.;
+			//hesitate a bit if too close. this is supposed to prevent overshoots and I *think* it works
 			if(movevec.length()<(force/P_DECCEL_COEFF)*2){
 				float dist = movevec.length();
 				dist /= (force/P_DECCEL_COEFF)*2;
 				force *= dist;
 			}
-			//if in thrust mode, exert more force.
-			if(owner.player.buttons & BT_ALTATTACK)
-				force *= 3.;
 			//if we're farther than the arm's length + the weapon's available extension, pull much harder
 			if(weaponextension()>=maxextend*1.5){
 				force *= 1.05 + (weaponextension() - maxextend*1.5)/90;
@@ -412,6 +412,7 @@ class doso_weap_w:actor abstract{
 		float bladeend = wpnsize * (1.0 - ((bladestrt) / 255.));
 		bool hitblade;
 		bool hitpoint;
+		
 		if(wpnpos > bladestart && wpnpos < bladeend)
 			hitblade = true;
 		if(wpnsize - wpnpos < (wpnwidth+1)*tipsharp){
@@ -419,6 +420,8 @@ class doso_weap_w:actor abstract{
 			hitblade = false;
 			force *= 1.7 + tipsharp;
 		}
+		
+		hit.vel += (vel / (hit.mass/wpnmass)) * (hitpoint?3.:2.);
 		
 		if(hitblade){
 			if(doso_debug && force > 30)
@@ -449,7 +452,7 @@ class doso_weap_w:actor abstract{
 		
 		int totdmg = bluntdmg + sharpdmg;
 		//discard collisions too light as they're probably just clang anyway
-		if(totdmg < 10 || (force < 15 && !hitpoint))
+		if(totdmg < 5 || (force < 10 && !hitpoint))
 			return;
 		if(doso_debug)
 			A_Log(string.format("total strike dmg: %d (%d blunt, %d sharp)",totdmg,bluntdmg,sharpdmg));
@@ -480,8 +483,11 @@ class doso_weap_w:actor abstract{
 				blood[random(0,2)].blood += bloodpartcl/2;
 			}
 		}
+		vector3 diff = level.vec3diff(pos,hitpos);
+		SetOrigin(hitpos,false);
 		hit.damagemobj(self,owner,bluntdmg,"blunt");
 		hit.damagemobj(self,owner,sharpdmg,"blade");
+		SetOrigin(pos-diff,false);
 	}
 	
 	//blood drip stuff

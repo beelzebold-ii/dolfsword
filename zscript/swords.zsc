@@ -101,8 +101,8 @@ class doso_dagger_w:doso_weap_w{
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 19,10;
 		doso_weap_w.sharpness 0.65,0.7;
-		doso_weap_w.maxextend 0;
-		doso_weap_w.restdistance 12;
+		doso_weap_w.maxextend 6;
+		doso_weap_w.restdistance 0;
 		doso_weap_w.sprite 'DAGR';
 		
 		tag "Dagger";
