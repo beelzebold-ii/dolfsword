@@ -10,6 +10,7 @@ class doso_longsword:doso_weap{
 		doso_weap.angle (-45, -40);
 		doso_weap.pos (10., -8., 0.0);
 		weapon.slotnumber 2;
+		tag "Longsword";
 	}
 	states{
 	spawn:
@@ -24,7 +25,7 @@ class doso_longsword_w:doso_weap_w{
 		doso_weap_w.blade 225,6;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 42,15;
-		doso_weap_w.sharpness 0.7,0.75;
+		doso_weap_w.sharpness 0.5,0.75;
 		doso_weap_w.maxextend 4;
 		doso_weap_w.restdistance 10;
 		doso_weap_w.sprite 'LSRD';
@@ -44,31 +45,71 @@ class doso_longsword_w:doso_weap_w{
 class doso_rapier:doso_weap{
 	default{
 		doso_weap.world "doso_rapier_w";
-		doso_weap.angle (-45, -55);
-		doso_weap.pos (0.0, -8., 0.0);
+		doso_weap.angle (24,0);
+		doso_weap.pos (12.0, 0., 0.);
 		weapon.slotnumber 2;
+		tag "Rapier";
 	}
 	states{
 	spawn:
-		LSRD S -1;
+		RPIR S -1;
 		stop;
 	}
 }
 
 class doso_rapier_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 0.96,16,0.32;
-		doso_weap_w.blade 250,2;
+		doso_weap_w.mass 0.96,16,0.34;
+		doso_weap_w.blade 235,2;
 		doso_weap_w.bladestart 0;
-		doso_weap_w.size 38,16;
-		doso_weap_w.sharpness 0.99,0.55;
-		doso_weap_w.maxextend 6;
-		doso_weap_w.restdistance 10;
-		doso_weap_w.sprite 'LSRD';
+		doso_weap_w.size 37,12;
+		doso_weap_w.sharpness 0.8,0.55;
+		doso_weap_w.maxextend 0;
+		doso_weap_w.restdistance 12;
+		doso_weap_w.sprite 'RPIR';
+		
+		tag "Rapier";
 	}
 	states{
 	spawn:
-		LSRD Z 1;
+		RPIR Z 1;
+		loop;
+	}
+}
+
+// THE DAGGER
+// And The Rapier's Cousin
+class doso_dagger:doso_weap{
+	default{
+		doso_weap.world "doso_dagger_w";
+		doso_weap.angle (24,0);
+		doso_weap.pos (12.0, -8., -6.);
+		weapon.slotnumber 1;
+		tag "Dagger";
+	}
+	states{
+	spawn:
+		DAGR S -1;
+		stop;
+	}
+}
+
+class doso_dagger_w:doso_weap_w{
+	default{
+		doso_weap_w.mass 0.61,128,0.26;
+		doso_weap_w.blade 200,3;
+		doso_weap_w.bladestart 0;
+		doso_weap_w.size 19,10;
+		doso_weap_w.sharpness 0.65,0.7;
+		doso_weap_w.maxextend 0;
+		doso_weap_w.restdistance 12;
+		doso_weap_w.sprite 'DAGR';
+		
+		tag "Dagger";
+	}
+	states{
+	spawn:
+		DAGR Z 1;
 		loop;
 	}
 }

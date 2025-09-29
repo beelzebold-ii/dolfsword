@@ -1,4 +1,4 @@
 gameinfo{
-	playerclasses = "halfsworder"
+	playerclasses = "halfsworder","dosoguard","dosoduelist","dosomonk"
 	addeventhandlers = "doso_inputhandler"
 }

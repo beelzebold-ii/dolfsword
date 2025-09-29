@@ -9,7 +9,8 @@ class doso_halberd:doso_weap{
 		doso_weap.world "doso_halberd_w";
 		doso_weap.angle (-55, -45);
 		doso_weap.pos (0.0, -16., -8.0);
-		weapon.slotnumber 3;
+		weapon.slotnumber 4;
+		tag "Halberd";
 	}
 	states{
 	spawn:
@@ -41,7 +42,7 @@ class doso_spear:doso_weap{
 		doso_weap.world "doso_spear_w";
 		doso_weap.angle (-55, -67.5);
 		doso_weap.pos (0.0, -16., -8.0);
-		weapon.slotnumber 3;
+		weapon.slotnumber 4;
 	}
 	states{
 	spawn:
@@ -52,7 +53,7 @@ class doso_spear:doso_weap{
 
 class doso_spear_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 0.56,130,0.4;
+		doso_weap_w.mass 1.26,130,0.4;
 		doso_weap_w.blade 16,4;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 56,2;

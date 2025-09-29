@@ -436,13 +436,24 @@ class doso_weap_w:actor abstract{
 		float bluntdmg = (((force - 5.) * (1.0 - sharpness + 0.1)) ** 1.4) * 0.1;
 		float sharpdmg = ((force + 2) * sharpness) ** 0.8;
 		bluntdmg *= 0.5;
+		if(hitpoint){
+			bluntdmg *= 0.6;
+			//thinner spike = deeper thrust = more damage
+			//applies more to sharper points so as to not apply to, say, a quarterstaff
+			sharpdmg *= 0.9 + ((1.0 / min(wpnwidth,bladewidth)) * tipsharp);
+		}
+		if(!(hitblade || hitpoint)){
+			bluntdmg *= 0.7;
+			sharpdmg *= 0.85;
+		}
+		
 		int totdmg = bluntdmg + sharpdmg;
 		//discard collisions too light as they're probably just clang anyway
-		if(totdmg < 10 || force < 15)
+		if(totdmg < 10 || (force < 15 && !hitpoint))
 			return;
 		if(doso_debug)
 			A_Log(string.format("total strike dmg: %d (%d blunt, %d sharp)",totdmg,bluntdmg,sharpdmg));
-		int bloodpartcl = sharpdmg + bluntdmg/3;
+		int bloodpartcl = sharpdmg + bluntdmg/5;
 		if(totdmg > hit.health)
 			bloodpartcl = bloodpartcl * 4 + 8;
 		if(bloodpartcl>6){
@@ -479,9 +490,17 @@ class doso_weap_w:actor abstract{
 		for(int i=0;i<=2;i++){
 			if(blood[i].blood > 0){
 				blood[i].timer--;
+				if(vel_angle.length()>6){
+					blood[i].timer -= vel_angle.length()/2;
+				}
 				if(blood[i].timer<=0){
-					blood[i].timer = 40 - blood[i].blood;
+					blood[i].timer = 44 - blood[i].blood;
 					blood[i].blood--;
+					
+					//calculate bonus velocity from angular movement
+					vector2 vel_a = ((vel_angle.x * (3.1415/180))*blood[i].weappos,(vel_angle.y * (3.1415/180))*blood[i].weappos);
+					vector2 vel_a_xy = angletovector(deltaangle(angle,random(-165,-75)),vel_a.x);
+					vector3 vel_a_transfer = (vel_a_xy.x,vel_a_xy.y,vel_a.y);
 					
 					fspawnparticleparams prt;
 					prt.color1 = color(0x66,0,0);
@@ -489,12 +508,28 @@ class doso_weap_w:actor abstract{
 					vector2 ofxy = angletovector(angle,1.);
 					vector3 bloodpos = (ofxy.x * ofz.x, ofxy.y * ofz.x, -ofz.y);
 					prt.pos = pos + bloodpos;
-					prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5));
+					prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer;
 					prt.accel = (0.,0.,-.6);
 					prt.size = random(4,4+blood[i].blood/2);
 					prt.lifetime = random(10,16);
 					prt.startalpha = 0.9;
 					level.SpawnParticle(prt);
+					//spawn more particles if you're swinging fast
+					if(vel_angle.length()>8){
+						//A_Log("splash blood");
+						prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer;
+						prt.size = random(4,4+blood[i].blood/2);
+						level.SpawnParticle(prt);
+						if(vel_angle.length()>16){
+							prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer * 1.3;
+							level.SpawnParticle(prt);
+							prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer * 1.2;
+							prt.size = random(4,4+blood[i].blood/2);
+							level.SpawnParticle(prt);
+							blood[i].blood--;
+							blood[i].timer-=6;
+						}
+					}
 				}
 			}
 		}

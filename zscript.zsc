@@ -5,12 +5,30 @@ version "4.10"
 class halfsworder:doomplayer{
 	default{
 		player.startitem "doso_longsword",1;
-		player.startitem "doso_halberd",1;
-		player.displayname "Dolf Sworder";
+		player.displayname "Swordsman";
 		player.forwardmove 0.6,0.3;
 		player.sidemove 0.7,0.35;
 		
-		radius 18;
+		radius 17;
+	}
+}
+class dosomonk:halfsworder{
+	default{
+		player.startitem "doso_staff",1;
+		player.displayname "Monk";
+	}
+}
+class dosoguard:halfsworder{
+	default{
+		player.startitem "doso_halberd",1;
+		player.displayname "Guard";
+	}
+}
+class dosoduelist:halfsworder{
+	default{
+		player.startitem "doso_rapier",1;
+		player.startitem "doso_dagger",1;
+		player.displayname "Fencer";
 	}
 }
 
@@ -18,6 +36,7 @@ class halfsworder:doomplayer{
 
 #include "zscript/swords.zsc"
 #include "zscript/bladedpole.zsc"
+#include "zscript/bluntpole.zsc"
 
 class doso_inputhandler:eventhandler{
 	override bool InputProcess(inputevent e){
