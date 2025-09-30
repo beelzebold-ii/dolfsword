@@ -46,6 +46,8 @@ class dosoldier:halfsworder{
 #include "zscript-doso/weapons/bladedpole.zsc"
 #include "zscript-doso/weapons/bluntpole.zsc"
 
+#include "zscript-doso/spawners.zsc"
+
 //handler for mouse input
 class doso_inputhandler:eventhandler{
 	override bool InputProcess(inputevent e){
