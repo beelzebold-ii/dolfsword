@@ -180,6 +180,8 @@ class doso_weap_w:actor abstract{
 		this.angle = parent.owner.angle;
 		this.pitch = parent.owner.pitch;
 		this.changesprite();
+		
+		doso_bloodstain.create(this);
 		return this;
 	}
 	
@@ -384,7 +386,8 @@ class doso_weap_w:actor abstract{
 			if(impact_vel > 12. && doso_debug)
 				A_Log(string.format(gettag().." struck "..ln.hitactor.gettag().." with net speed of %.1f m/s and mass of %.2fkg with a force of %dN",impact_vel,massatpoint(ln.distance),force));
 			
-			hitactor(ln.hitactor,force,ln.distance,ln.hitlocation);
+			if(ln.hitactor.bshootable)
+				hitactor(ln.hitactor,force,ln.distance,ln.hitlocation);
 		}else{
 			if( (vel.length(),vel_angle.length()).length() > 12. ){
 				for(int i=1;i< floor((vel.length(),vel_angle.length()).length()*2 - 18);i++){
@@ -400,7 +403,36 @@ class doso_weap_w:actor abstract{
 					level.SpawnParticle(prt);
 				}
 			}
-			vel = (0.,0.,0.);
+			vector2 normal;
+			vector3 normal3;
+			double sep;
+			switch(ln.hittype){
+				case TRACE_HITWALL:
+					normal = doso_math.vec2normal(ln.hitline.delta);
+					normal3 = (normal.x,normal.y,0.);
+					sep = vel dot normal3;
+					if(sep < 0){
+						vel -= sep * normal;
+					}
+					break;
+				case TRACE_HITFLOOR:
+					normal3 = (0.,0.,1.);
+					sep = vel dot normal3;
+					if(sep < 0){
+						vel -= sep * normal3;
+					}
+					break;
+				case TRACE_HITCEILING:
+					normal3 = (0.,0.,-1.);
+					sep = vel dot normal3;
+					if(sep < 0){
+						vel -= sep * normal3;
+					}
+					break;
+				default:
+					vel = (0.,0.,0.);
+					break;
+			}
 			vel_angle = (0.,0.);
 		}
 	}
@@ -457,6 +489,8 @@ class doso_weap_w:actor abstract{
 		if(doso_debug)
 			A_Log(string.format("total strike dmg: %d (%d blunt, %d sharp)",totdmg,bluntdmg,sharpdmg));
 		int bloodpartcl = sharpdmg + bluntdmg/5;
+		if(hit.bnoblood)
+			bloodpartcl = -1;
 		if(totdmg > hit.health)
 			bloodpartcl = bloodpartcl * 4 + 8;
 		if(bloodpartcl>6){
@@ -598,3 +632,70 @@ struct blooddripspot{
 	float weappos;
 	int timer;
 };
+//class for bloody weapon overlays
+class doso_bloodstain:actor{
+	default{
+		+INTERPOLATEANGLES
+		+FLATSPRITE
+		+ROLLSPRITE
+		+NOCLIP
+		+NOGRAVITY
+		-SOLID
+		+NOBLOCKMAP
+		+BRIGHT
+		
+		renderstyle "multiply";
+	}
+	doso_weap_w parent;
+	uint8 bloodthreshold;
+	uint8 bloodi;
+	static doso_bloodstain CreateOne(doso_weap_w parent){
+		doso_bloodstain this = doso_bloodstain(spawn("doso_bloodstain",parent.pos));
+		this.parent = parent;
+		this.sprite = parent.sprite;
+		this.angle = parent.angle;
+		this.pitch = parent.pitch;
+		this.roll = parent.roll;
+		this.A_FadeTo(0.0,FTF_CLAMP);
+		
+		return this;
+	}
+	const MAXBLOOD = 6;
+	static void Create(doso_weap_w parent){
+		doso_bloodstain this;
+		
+		for(int i = 1;i<=MAXBLOOD;i++){
+			this = doso_bloodstain.createone(parent);
+			this.bloodthreshold = 10*i;
+		}
+	}
+	
+	override void tick(){
+		super.tick();
+		
+		if(!parent)destroy();
+		
+		SetOrigin(parent.pos,true);
+		sprite = parent.sprite;
+		angle = parent.angle;
+		pitch = parent.pitch;
+		roll = parent.roll;
+		alpha = 0.0;
+		
+		int blood = 0;
+		
+		for(int i = 0;i <= 2;i++){
+			blood += parent.blood[i].blood;
+		}
+		
+		if(blood > bloodthreshold){
+			alpha = 1.0;
+		}
+	}
+	
+	states{
+	spawn:
+		#### Y 1;
+		loop;
+	}
+}

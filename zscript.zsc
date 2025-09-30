@@ -32,6 +32,8 @@ class dosoduelist:halfsworder{
 	}
 }
 
+#include "zscript/miscmath.zsc"
+
 #include "zscript/weapon.zsc"
 
 #include "zscript/swords.zsc"

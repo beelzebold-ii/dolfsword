@@ -1,0 +1,15 @@
+// VARIOUS MISCELLANEOUS MATHEMATICAL AND INFORMATION FUNCTIONS FOR FUNSIES
+//~=========================================================================~
+
+class doso_math:object abstract{
+	//hopefully return the normal vector of a vector2
+	static vector2 Vec2Normal(vector2 delta){
+		return actor.rotatevector(delta.unit(),-90);
+	}
+	//same but returns an angle
+	static double Vec2NormalAngle(vector2 delta){
+		vector2 normal = vec2normal(delta);
+		vector3 sc = level.sphericalcoords((0,0,0),(normal.x,normal.y,0),absolute:true);
+		return sc.x;
+	}
+}
