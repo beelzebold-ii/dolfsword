@@ -31,6 +31,12 @@ class dosoduelist:halfsworder{
 		player.displayname "Fencer";
 	}
 }
+class dosoldier:halfsworder{
+	default{
+		player.startitem "doso_spear",1;
+		player.displayname "Soldier";
+	}
+}
 
 #include "zscript/miscmath.zsc"
 
@@ -40,6 +46,7 @@ class dosoduelist:halfsworder{
 #include "zscript/bladedpole.zsc"
 #include "zscript/bluntpole.zsc"
 
+//handler for mouse input
 class doso_inputhandler:eventhandler{
 	override bool InputProcess(inputevent e){
 		if(e.type == InputEvent.TYPE_MOUSE){
@@ -53,7 +60,6 @@ class doso_inputhandler:eventhandler{
 	
 	override void NetworkProcess(consoleevent e){
 		if(e.name=="DoSo_MouseEvent"){
-			//console.printf("DoSo_MouseEvent x"..e.args[0].." y"..e.args[1]);
 			playerinfo pla = players[e.args[2]];
 			if(pla.readyweapon && pla.readyweapon is "doso_weap"){
 				let wep = doso_weap(pla.readyweapon);
@@ -74,6 +80,18 @@ class doso_inputhandler:eventhandler{
 					}
 				}
 			}
+		}
+	}
+}
+
+//handler for preventing standard game weapon and ammo spawns
+class doso_spawnhandler:eventhandler{
+	override void WorldThingSpawned(worldevent e){
+		if(doso_blockweapspawns && e.thing is "weapon" && !(e.thing is "doso_weap")){
+			e.thing.destroy();
+		}
+		if(doso_blockammospawns && e.thing is "ammo"){
+			e.thing.destroy();
 		}
 	}
 }

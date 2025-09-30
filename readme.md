@@ -2,6 +2,8 @@
 It's like Half Sword. It's Doolf Sword!
 
 CVAR - DoSo_MouseSens - Factor for all mouse movement when in one of the weapon control modes.
+CVAR - DoSo_BlockWeapSpawns - Prevent all those pesky non-doolfsword weapons from spawning.
+CVAR - DoSo_BlockAmmoSpawns - Likewise, for ammo.
 
 ## Controls
 +attack     - enter swing mode, both translating the weapon in x/z and rotating it.

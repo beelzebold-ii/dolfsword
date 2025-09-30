@@ -276,9 +276,9 @@ class doso_weap_w:actor abstract{
 				force *= dist;
 			}
 			//if we're farther than the arm's length + the weapon's available extension, pull much harder
-			if(weaponextension()>=maxextend*1.5){
+			if(weaponextension()>=(maxextend+2)*1.5){
 				force *= 1.05 + (weaponextension() - maxextend*1.5)/90;
-				if(distance2d(owner)>(DOSO_ARMSREACH + maxextend)*3.){
+				if(distance2d(owner)>(DOSO_ARMSREACH +(maxextend+2))*3.){
 					force = 0.;
 					SetOrigin(parent.owner.pos + (0.0, 0.0, parent.owner.height/2),true);
 				}
@@ -447,10 +447,12 @@ class doso_weap_w:actor abstract{
 		
 		if(wpnpos > bladestart && wpnpos < bladeend)
 			hitblade = true;
-		if(wpnsize - wpnpos < (wpnwidth+1)*tipsharp){
+		//if(wpnsize - wpnpos < (wpnwidth+1)*tipsharp){ //a rather pointless check if ya ask me ;p
+		vector2 facing = angletovector(angle,1.0);
+		if(vel.unit() dot (facing.x,facing.y,0.) > 0.7){
 			hitpoint = true;
 			hitblade = false;
-			force *= 1.7 + tipsharp;
+			force *= 1.4 + (tipsharp * 2. / min(wpnwidth,bladewidth));
 		}
 		
 		hit.vel += (vel / (hit.mass/wpnmass)) * (hitpoint?3.:2.);
@@ -673,7 +675,10 @@ class doso_bloodstain:actor{
 	override void tick(){
 		super.tick();
 		
-		if(!parent)destroy();
+		if(!parent){
+			destroy();
+			return;
+		}
 		
 		SetOrigin(parent.pos,true);
 		sprite = parent.sprite;

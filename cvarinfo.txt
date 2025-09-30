@@ -1,2 +1,4 @@
 user float doso_mousesens = 0.3;
+server bool doso_blockweapspawns = true;
+server bool doso_blockammospawns = true;
 server bool doso_debug = false;
