@@ -10,6 +10,7 @@ class doso_longsword:doso_weap{
 		doso_weap.angle (-45, -40);
 		doso_weap.pos (10., -8., 0.0);
 		weapon.slotnumber 2;
+		weapon.slotpriority 3;
 		tag "Longsword";
 	}
 	states{
@@ -48,6 +49,7 @@ class doso_rapier:doso_weap{
 		doso_weap.angle (24,0);
 		doso_weap.pos (12.0, 0., 0.);
 		weapon.slotnumber 2;
+		weapon.slotpriority 1;
 		tag "Rapier";
 	}
 	states{
@@ -85,6 +87,7 @@ class doso_dagger:doso_weap{
 		doso_weap.angle (24,0);
 		doso_weap.pos (12.0, -8., -6.);
 		weapon.slotnumber 1;
+		weapon.slotpriority 3;
 		tag "Dagger";
 	}
 	states{
@@ -123,6 +126,7 @@ class doso_falchion:doso_weap{
 		doso_weap.angle (-45, -55);
 		doso_weap.pos (0.0, -8., 0.0);
 		weapon.slotnumber 2;
+		weapon.slotpriority 2;
 	}
 	states{
 	spawn:

@@ -1,0 +1,111 @@
+// ENEMY ARMOR BEHAVIOR
+//~=====================~
+
+
+enum doso_armorcoverage{
+	DOSO_ARMORHEAD,
+	DOSO_ARMORCHEST,
+	DOSO_ARMORHEADCHEST,
+	DOSO_ARMORLEGS,
+	DOSO_ARMORCHESTLEGS,
+	DOSO_ARMORFULL
+};
+
+class doso_armoragent:inventory{
+	float pointprot,bladeprot,bluntprot;
+	int coveragetype;
+	default{
+		inventory.maxamount 1;
+	}
+	override void AbsorbDamage(int damage,name damagetype,out int newdamage,actor inflictor,actor source,int flags){
+		newdamage = damage;
+		
+		float penchance = frandom(0.,1.);
+		float prot = 0.;
+		switch(damagetype){
+			case 'blunt':
+			case 'bashing':
+			case 'melee':
+				prot = bluntprot;
+				break;
+			case 'blade':
+			case 'cutting':
+			case 'cut':
+			case 'sharp':
+			case 'slashing':
+				prot = bladeprot;
+				break;
+			case 'point':
+			case 'thrust':
+			case 'tip':
+				prot = pointprot;
+				break;
+			default:
+				return;
+				break;
+		}
+		
+		double hitheight = (inflictor.pos.z - owner.pos.z) / owner.height;
+		bool hitarmor = false;
+		//check if this hit actually hit armor or if it went to flesh at the current height
+		switch(coveragetype){
+			default:
+			case DOSO_ARMORCHEST:
+				if(hitheight > 0.45 && hitheight < 0.8)
+					hitarmor = true;
+				break;
+			case DOSO_ARMORHEAD:
+				if(hitheight > 0.8)
+					hitarmor = true;
+				break;
+			case DOSO_ARMORHEADCHEST:
+				if(hitheight > 0.45 && hitheight < 0.8)
+					hitarmor = true;
+				if(hitheight > 0.82)
+					hitarmor = true;
+				break;
+			case DOSO_ARMORLEGS:
+				if(hitheight < 0.45 && hitheight > 0.075)
+					hitarmor = true;
+				break;
+			case DOSO_ARMORCHESTLEGS:
+				if(hitheight > 0.45 && hitheight < 0.8)
+					hitarmor = true;
+				if(hitheight < 0.43 && hitheight > 0.075)
+					hitarmor = true;
+				break;
+			case DOSO_ARMORFULL:
+				if(hitheight > 0.45 && hitheight < 0.8)
+					hitarmor = true;
+				if(hitheight < 0.43 && hitheight > 0.05)
+					hitarmor = true;
+				if(hitheight > 0.82)
+					hitarmor = true;
+				break;
+		}
+		
+		if(penchance < prot && hitarmor){
+			newdamage *= 1. - prot;
+		}
+	}
+	
+	static doso_armoragent Create(float protblunt,float protblade,float protpoint,actor target,doso_armorcoverage coverage = DOSO_ARMORCHEST,bool modifyhp = true){
+		scriptutil.giveinventory(target,"doso_armoragent",1);
+		doso_armoragent this = doso_armoragent(target.findinventory("doso_armoragent",true));
+		
+		this.bluntprot = protblunt;
+		this.bladeprot = protblade;
+		this.pointprot = protpoint;
+		
+		this.coveragetype = coverage;
+		
+		if(modifyhp){
+			//hp is simply multiplied by the average damage protection
+			double hpfactor = 1. - (protblunt + protblade + protpoint) / 3.;
+			target.health *= hpfactor;
+			target.health = floor(target.health);
+		}
+		
+		return this;
+	}
+}

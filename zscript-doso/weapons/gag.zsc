@@ -10,6 +10,7 @@ class doso_dslayer:doso_weap{
 		doso_weap.angle (-45, -40);
 		doso_weap.pos (18., -8., 0.0);
 		weapon.slotnumber 7;
+		weapon.slotpriority 0;
 		tag "Dragonslayer";
 	}
 	states{

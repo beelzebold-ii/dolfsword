@@ -61,6 +61,8 @@ class dosoldier:halfsworder{
 
 #include "zscript-doso/spawners.zsc"
 
+#include "zscript-doso/enemyarmor.zsc"
+
 //handler for mouse input
 class doso_inputhandler:eventhandler{
 	override bool InputProcess(inputevent e){
@@ -103,13 +105,10 @@ class doso_inputhandler:eventhandler{
 class doso_spawnhandler:eventhandler{
 	override void WorldThingSpawned(worldevent e){
 		if(doso_blockweapspawns && e.thing is "weapon" && !(e.thing is "doso_weap")){
+			actor.spawn("doso_randomweapon",e.thing.pos);
 			e.thing.destroy();
 		}
 		if(doso_blockammospawns && e.thing is "ammo"){
-			e.thing.destroy();
-		}
-		//block bdropped doso_weap
-		if(e.thing is "randomspawner" && e.thing.bdropped){
 			e.thing.destroy();
 		}
 	}

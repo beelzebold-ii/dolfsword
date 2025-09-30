@@ -41,7 +41,8 @@ class doso_staff:doso_weap{
 		doso_weap.world "doso_staff_w";
 		doso_weap.angle (-75, -20);
 		doso_weap.pos (4.0, 8., 2);
-		weapon.slotnumber 3;
+		weapon.slotnumber 1;
+		weapon.slotpriority 2;
 		tag "Quarterstaff";
 	}
 	states{

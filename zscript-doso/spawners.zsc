@@ -1,4 +1,15 @@
 // RANDOMSPAWNERS
+class doso_randomweapon:randomspawner{
+	//replaces any weapon that for some reason isn't replaced by anything else
+	default{
+		dropitem "doso_staff",256,2;
+		dropitem "doso_dagger",256,1;
+		dropitem "doso_longsword",256,2;
+		dropitem "doso_rapierspawner",256,2;
+		dropitem "doso_spear",256,1;
+		dropitem "doso_halberd",256,1;
+	}
+}
 class chainsawspawns:randomspawner replaces chainsaw{
 	default{
 		dropitem "doso_staff",256,7;
@@ -13,16 +24,17 @@ class pistolspawns:randomspawner replaces pistol{
 }
 class shotgunspawns:randomspawner replaces shotgun{
 	default{
-		dropitem "doso_longsword",256,7;
+		dropitem "doso_longsword",256,2;
 		dropitem "doso_rapierspawner",256,2;
-		dropitem "doso_spear",256,1;
+		dropitem "doso_spear",256,6;
+		dropitem "doso_halberd",256,1;
 	}
 }
 class chaingunspawns:randomspawner replaces chaingun{
 	default{
 		dropitem "doso_longsword",256,1;
 		dropitem "doso_rapierspawner",256,3;
-		dropitem "doso_spear",256,7;
+		dropitem "doso_spear",256,6;
 		dropitem "doso_halberd",256,5;
 	}
 }
@@ -43,6 +55,15 @@ class doso_rapierspawner:actor{
 			spawn("doso_dagger",vec3angle(frandom(12.,16.),frandom(-180.,180.),4.),ALLOW_REPLACE);
 		destroy();
 	}
+	states{
+	spawn:
+		TNT1 A 0;
+		stop;
+	}
+}
+
+// Empty item for nothing to spawn
+class doso_destroy:actor{
 	states{
 	spawn:
 		TNT1 A 0;

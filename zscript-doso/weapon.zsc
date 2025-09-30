@@ -247,6 +247,8 @@ class doso_weap_w:actor abstract{
 			return;
 		}
 		
+		A_SetRenderStyle(alpha,owner.getrenderstyle());
+		
 		//spawn the marker at the desired position
 		doso_marker.create(restdist,parent);
 		
@@ -570,7 +572,10 @@ class doso_weap_w:actor abstract{
 		vector3 diff = level.vec3diff(pos,hitpos);
 		SetOrigin(hitpos,false);
 		hit.damagemobj(self,owner,bluntdmg,"blunt");
-		hit.damagemobj(self,owner,sharpdmg,"blade");
+		if(!hitpoint)
+			hit.damagemobj(self,owner,sharpdmg,"blade");
+		else
+			hit.damagemobj(self,owner,sharpdmg,"point");
 		SetOrigin(pos-diff,false);
 	}
 	
