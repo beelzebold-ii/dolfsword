@@ -38,13 +38,13 @@ class dosoldier:halfsworder{
 	}
 }
 
-#include "zscript/miscmath.zsc"
+#include "zscript-doso/miscmath.zsc"
 
-#include "zscript/weapon.zsc"
+#include "zscript-doso/weapon.zsc"
 
-#include "zscript/swords.zsc"
-#include "zscript/bladedpole.zsc"
-#include "zscript/bluntpole.zsc"
+#include "zscript-doso/weapons/swords.zsc"
+#include "zscript-doso/weapons/bladedpole.zsc"
+#include "zscript-doso/weapons/bluntpole.zsc"
 
 //handler for mouse input
 class doso_inputhandler:eventhandler{
