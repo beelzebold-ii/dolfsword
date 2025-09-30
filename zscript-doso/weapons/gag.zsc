@@ -1,0 +1,46 @@
+// GAGS AND JOKES
+//~===============~
+
+
+// THE DRAGONSLAYER
+// Too big to be called a sword. Too big, too thick, too heavy, and too rough, it is more like a large hunk of iron.
+class doso_dslayer:doso_weap{
+	default{
+		doso_weap.world "doso_dslayer_w";
+		doso_weap.angle (-45, -40);
+		doso_weap.pos (18., -8., 0.0);
+		weapon.slotnumber 7;
+		tag "Dragonslayer";
+	}
+	states{
+	spawn:
+		LSRD S -1;
+		stop;
+	}
+}
+
+class doso_dslayer_w:doso_weap_w{
+	default{
+		doso_weap_w.mass 4.,148,0.2;
+		doso_weap_w.blade 240,12;
+		doso_weap_w.bladestart 0;
+		doso_weap_w.size 70,30;
+		doso_weap_w.sharpness 0.8,0.6;
+		doso_weap_w.maxextend 14;
+		doso_weap_w.restdistance 8.;
+		doso_weap_w.sprite 'DRGN';
+		
+		tag "Dragonslayer";
+	}
+	
+	override void hitactor(actor hit,float force,double wpnpos,vector3 hitpos,vector3 knock,vector3 oldvel){
+		force = ((force / 12.) ** 3.5) * 12.;
+		super.hitactor(hit,force * 2.,wpnpos,hitpos,knock * 6.,oldvel);
+	}
+	
+	states{
+	spawn:
+		DRGN Z 1;
+		loop;
+	}
+}

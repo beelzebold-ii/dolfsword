@@ -21,11 +21,11 @@ class doso_longsword:doso_weap{
 
 class doso_longsword_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 1.37,36,0.3;
-		doso_weap_w.blade 225,6;
+		doso_weap_w.mass 1.37,46,0.3;
+		doso_weap_w.blade 225,5;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 42,15;
-		doso_weap_w.sharpness 0.5,0.75;
+		doso_weap_w.sharpness 0.8,0.9;
 		doso_weap_w.maxextend 4;
 		doso_weap_w.restdistance 10;
 		doso_weap_w.sprite 'LSRD';
@@ -59,11 +59,11 @@ class doso_rapier:doso_weap{
 
 class doso_rapier_w:doso_weap_w{
 	default{
-		doso_weap_w.mass 0.96,16,0.6;
-		doso_weap_w.blade 235,2;
+		doso_weap_w.mass 1.06,26,0.6;
+		doso_weap_w.blade 235,1;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 37,12;
-		doso_weap_w.sharpness 0.8,0.45;
+		doso_weap_w.sharpness 1.0,0.6;
 		doso_weap_w.maxextend 0;
 		doso_weap_w.restdistance 12;
 		doso_weap_w.sprite 'RPIR';
@@ -100,7 +100,7 @@ class doso_dagger_w:doso_weap_w{
 		doso_weap_w.blade 200,3;
 		doso_weap_w.bladestart 0;
 		doso_weap_w.size 19,10;
-		doso_weap_w.sharpness 0.65,0.7;
+		doso_weap_w.sharpness 0.95,0.7;
 		doso_weap_w.maxextend 6;
 		doso_weap_w.restdistance 0;
 		doso_weap_w.sprite 'DAGR';

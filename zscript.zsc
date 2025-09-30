@@ -11,6 +11,18 @@ class halfsworder:doomplayer{
 		
 		radius 17;
 	}
+	
+	override void tick(){
+		super.tick();
+		double movespd = 1.0;
+		if(player.readyweapon && doso_weap(player.readyweapon).child){
+			movespd = min(2.5,DOSO_POS_MAXACCEL / doso_weap(player.readyweapon).child.wpnmass) / 2.5;
+		}
+		forwardmove1 = default.forwardmove1 * movespd;
+		forwardmove2 = default.forwardmove2 * movespd;
+		sidemove1 = default.sidemove1 * movespd;
+		sidemove2 = default.sidemove2 * movespd;
+	}
 }
 class dosomonk:halfsworder{
 	default{
@@ -45,6 +57,7 @@ class dosoldier:halfsworder{
 #include "zscript-doso/weapons/swords.zsc"
 #include "zscript-doso/weapons/bladedpole.zsc"
 #include "zscript-doso/weapons/bluntpole.zsc"
+#include "zscript-doso/weapons/gag.zsc"
 
 #include "zscript-doso/spawners.zsc"
 
@@ -93,6 +106,10 @@ class doso_spawnhandler:eventhandler{
 			e.thing.destroy();
 		}
 		if(doso_blockammospawns && e.thing is "ammo"){
+			e.thing.destroy();
+		}
+		//block bdropped doso_weap
+		if(e.thing is "randomspawner" && e.thing.bdropped){
 			e.thing.destroy();
 		}
 	}

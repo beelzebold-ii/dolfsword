@@ -5,6 +5,11 @@
 const DOSO_ARMSREACH = 18;
 //how wide the grip is by default (one hand)
 const DOSO_HANDWIDTH = 3.0;
+//map units per tic squared at 1kg
+const DOSO_POS_MAXACCEL = 5.5;
+//degrees per tic squared at 1kg and radius 32 (something like one meter)
+//and with a grip radius of 5
+const DOSO_ANG_MAXACCEL = 16.0;
 //maximum yaw deviation from front of your weapon
 const DOSO_MAXANGLE = 90.0;
 //lowest pitch of your weapon
@@ -182,6 +187,7 @@ class doso_weap_w:actor abstract{
 		this.changesprite();
 		
 		doso_bloodstain.create(this);
+		
 		return this;
 	}
 	
@@ -221,11 +227,6 @@ class doso_weap_w:actor abstract{
 		level.spawnparticle(particle);
 	}
 	
-	//map units per tic squared at 1kg
-	const POS_MAXACCEL = 5.5;
-	//degrees per tic squared at 1kg and radius 32 (something like one meter)
-	//and with a grip radius of 5
-	const ANG_MAXACCEL = 16.0;
 	//velocities multiplied by these every tic
 	const P_DECCEL_COEFF = 0.7;
 	const A_DECCEL_COEFF = 0.85;
@@ -240,8 +241,11 @@ class doso_weap_w:actor abstract{
 		super.tick();
 		
 		//delete if no longer selected for some reason
-		if(owner.player.readyweapon!=parent || !parent.owner)
+		//something is nullreading so I'm just throwing nullchecks at this ok
+		if(!owner || !owner.player.readyweapon || owner.player.readyweapon!=parent || !parent.owner){
 			destroy();
+			return;
+		}
 		
 		//spawn the marker at the desired position
 		doso_marker.create(restdist,parent);
@@ -261,10 +265,10 @@ class doso_weap_w:actor abstract{
 		//first accelerate pos
 		vel *= P_DECCEL_COEFF;
 		if(level.vec3diff(pos,desired_position).length()>1){
-			double force = POS_MAXACCEL;
+			double force = DOSO_POS_MAXACCEL;
 			if(wpnmass!=0)
 				force /= wpnmass;
-			//turn this desired vector into a unit vector and then multiply it by POS_MAXACCEL
+			//turn this desired vector into a unit vector and then multiply it by DOSO_POS_MAXACCEL
 			vector3 movevec = level.vec3diff(pos,desired_position);
 			//if in thrust mode, exert more force.
 			if(owner.player.buttons & BT_ALTATTACK)
@@ -295,7 +299,7 @@ class doso_weap_w:actor abstract{
 		//we will be doing a very crude approximation by simply multipliying mass by radius squared.
 		//hopefully this works well enough.
 		if((deltaangle(angle,desired_angle),deltaangle(pitch,desired_pitch)).length()>6){
-			double torque = ANG_MAXACCEL;
+			double torque = DOSO_ANG_MAXACCEL;
 			//calculate radius of our grip from our pivot point.
 			float gripwidth = DOSO_HANDWIDTH + max(0,maxextend - weaponextension());
 			//torque is multiplied by grip width divided down so that torque is unchanged for a grip width of 5 units
@@ -356,6 +360,9 @@ class doso_weap_w:actor abstract{
 		if(doso_debug){
 			drawlineparticles(line_center);
 		}
+		
+		if(hitcooldown)
+			hitcooldown--;
 		if(line_center.hittype!=TRACE_HITNONE){
 			wpncollide(line_center);
 		}
@@ -364,16 +371,15 @@ class doso_weap_w:actor abstract{
 		trydripblood();
 	}
 	
+	//cooldown before exiting an enemy's collision before allowed to deal damage again; only 2 tics
+	int hitcooldown;
+	
 	//if the weapon has collided with something, we run this function
 	virtual void wpncollide(in flinetracedata ln){
 		//SetOrigin(pos - vel,false);
-		angle -= vel_angle.x;
-		pitch -= vel_angle.y;
 		if(ln.hittype==TRACE_HITACTOR){
-			float vel_p = vel.length();
-			float vel_a = (vel_angle.length() * (3.1415/180))*ln.distance;
-			
-			float impact_vel = vel_p + vel_a;
+			angle -= vel_angle.x*0.85;
+			pitch -= vel_angle.y*0.85;
 			
 			bool hit = false;
 			
@@ -382,24 +388,46 @@ class doso_weap_w:actor abstract{
 			vector2 normal = level.vec2diff(ln.hitactor.pos.xy,ln.hitlocation.xy).unit();
 			vector3 normal3 = (normal.x,normal.y,0.);
 			double sep = vel dot normal3;
+			vector3 oldvel = vel;
 			if(sep < 0){
 				vel -= sep * normal;
 				knock += sep * normal;
 				hit = true;
 			}
+			
+			if(absangle(angleto(ln.hitactor),angle+vel_angle.x) < absangle(angleto(ln.hitactor),angle))
+				hit = true;
 			vel_angle *= 0.2;
+			
+			if(hitcooldown)
+				hit = false;
+			
+			//only consider velocity toward the target
+			float vel_p = (sep * normal).length(); //this seems to have fucked up swiping attacks! which I am Not Happy abt
+			//it's fine I'll just crank angular momentum the fuck up
+			float vel_a = (vel_angle.length() * (3.1415/180))*ln.distance * 4.;
+			
+			//old code that did Not do this
+			//float vel_p = vel.length();
+			//float vel_a = (vel_angle.length() * (3.1415/180))*ln.distance;
+			
+			float impact_vel = vel_p + vel_a;
 			
 			impact_vel /= 32.; //meters/tic
 			impact_vel *= 35.; //meters/sec
 			
 			float force = impact_vel * massatpoint(ln.distance);
 			
-			if(impact_vel > 12. && doso_debug)
+			if(doso_debug && hit)
 				A_Log(string.format(gettag().." struck "..ln.hitactor.gettag().." with net speed of %.1f m/s and mass of %.2fkg with a force of %dN",impact_vel,massatpoint(ln.distance),force));
 			
 			if(ln.hitactor.bshootable && hit)
-				hitactor(ln.hitactor,force,ln.distance,ln.hitlocation,knock);
+				hitactor(ln.hitactor,force,ln.distance,ln.hitlocation,knock,oldvel);
+			
+			hitcooldown = 2;
 		}else{
+			angle -= vel_angle.x;
+			pitch -= vel_angle.y;
 			if( (vel.length(),vel_angle.length()).length() > 12. ){
 				for(int i=1;i< floor((vel.length(),vel_angle.length()).length()*2 - 18);i++){
 					fspawnparticleparams prt;
@@ -449,7 +477,7 @@ class doso_weap_w:actor abstract{
 	}
 	
 	//hit this actor
-	virtual void hitactor(actor hit,float force,double wpnpos,vector3 hitpos,vector3 knock){
+	virtual void hitactor(actor hit,float force,double wpnpos,vector3 hitpos,vector3 knock,vector3 oldvel){
 		double sharpness = 0.1;
 		float bladestart = wpnsize * (1.0 - ((bladestrt + bladecov) / 255.));
 		float bladeend = wpnsize * (1.0 - ((bladestrt) / 255.));
@@ -460,35 +488,35 @@ class doso_weap_w:actor abstract{
 			hitblade = true;
 		//if(wpnsize - wpnpos < (wpnwidth+1)*tipsharp){ //a rather pointless check if ya ask me ;p
 		vector2 facing = angletovector(angle,1.0);
-		if(vel.unit() dot (facing.x,facing.y,0.) > 0.7){
+		if(oldvel.unit() dot (facing.x,facing.y,0.) > 0.7){
 			hitpoint = true;
 			hitblade = false;
-			force *= 1.4 + (tipsharp * 2. / min(wpnwidth,bladewidth));
+			force *= 1. + (tipsharp / min(wpnwidth,bladewidth));
 		}
 		
 		hit.vel += (knock / (hit.mass/wpnmass)) * (hitpoint?5.:3.5);
 		
 		if(hitblade){
-			if(doso_debug && force > 30)
-				A_Log("hit: blade");
+			if(doso_debug)
+				A_Log("hit: blade ("..wpnpos..")");
 			sharpness = bldsharp;
 		}
 		if(hitpoint){
-			if(doso_debug && force > 30)
-				A_Log("hit: tip");
+			if(doso_debug)
+				A_Log("hit: tip ("..wpnpos..")");
 			sharpness = tipsharp;
 		}
-		if(!(hitblade || hitpoint) && doso_debug && force > 30)
-			A_Log("hit: haft");
+		if(!(hitblade || hitpoint) && doso_debug)
+			A_Log("hit: haft ("..wpnpos..")");
 		
 		float bluntdmg = (((force - 5.) * (1.0 - sharpness + 0.1)) ** 1.4) * 0.1;
 		float sharpdmg = ((force + 2) * sharpness) ** 0.8;
-		bluntdmg *= 0.5;
+		sharpdmg *= 2.;
 		if(hitpoint){
 			bluntdmg *= 0.6;
 			//thinner spike = deeper thrust = more damage
 			//applies more to sharper points so as to not apply to, say, a quarterstaff
-			sharpdmg *= 0.9 + ((1.0 / min(wpnwidth,bladewidth)) * tipsharp);
+			sharpdmg *= 0.75 + ((1.0 / min(wpnwidth,bladewidth) ** 0.6) * (tipsharp ** 2.));
 		}
 		if(!(hitblade || hitpoint)){
 			bluntdmg *= 0.7;
@@ -497,7 +525,7 @@ class doso_weap_w:actor abstract{
 		
 		int totdmg = bluntdmg + sharpdmg;
 		//discard collisions too light as they're probably just clang anyway
-		if(totdmg < 5 || (force < 10 && !hitpoint))
+		if(totdmg < 5 || force < 5)
 			return;
 		if(doso_debug)
 			A_Log(string.format("total strike dmg: %d (%d blunt, %d sharp)",totdmg,bluntdmg,sharpdmg));
@@ -563,24 +591,54 @@ class doso_weap_w:actor abstract{
 					prt.pos = pos + bloodpos;
 					prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer;
 					prt.accel = (0.,0.,-.6);
-					prt.size = random(4,4+blood[i].blood/2);
+					prt.size = random(4,4+blood[i].blood ** 0.8);
 					prt.lifetime = random(10,16);
 					prt.startalpha = 0.9;
 					level.SpawnParticle(prt);
+					
+					//spawn a lot more particles if *particularly* bloody
+					//and deplete faster so the dragonslayer isn't just permanently bleeding everywhere lol
+					if(blood[i].blood > 30){
+						int bloodcount = (blood[i].blood - 15) / 15;
+						blood[i].blood -= floor((bloodcount / 15.) ** 1.5 * 15.) + 1;
+						for(int n = 0;n <= bloodcount;n++){
+							prt.color1 = color(0x66,0,0);
+							vector2 ofz = angletovector(pitch,blood[i].weappos);
+							vector2 ofxy = angletovector(angle,1.);
+							vector3 bloodpos = (ofxy.x * ofz.x, ofxy.y * ofz.x, -ofz.y);
+							prt.pos = pos + bloodpos;
+							prt.vel = ((frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer) * (bloodcount / 2.);
+							prt.accel = (0.,0.,-0.6);
+							prt.size = random(4,(4 + blood[i].blood ** 0.8) - i);
+							prt.lifetime = random(10,16);
+							prt.startalpha = 0.8;
+							level.SpawnParticle(prt);
+						}
+					}
+					
 					//spawn more particles if you're swinging fast
 					if(vel_angle.length()>8){
 						//A_Log("splash blood");
 						prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer;
-						prt.size = random(4,4+blood[i].blood/2);
+						prt.size = random(4,4+blood[i].blood ** 0.8);
 						level.SpawnParticle(prt);
 						if(vel_angle.length()>16){
 							prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer * 1.3;
 							level.SpawnParticle(prt);
 							prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer * 1.2;
-							prt.size = random(4,4+blood[i].blood/2);
+							prt.size = random(4,4+blood[i].blood ** 0.8);
 							level.SpawnParticle(prt);
 							blood[i].blood--;
 							blood[i].timer-=6;
+							int bloodcount = vel_angle.length()/10;
+							for(int j = 0;j <= bloodcount;j++){
+								vel_a = ((vel_angle.x * (3.1415/180))*blood[i].weappos,(vel_angle.y * (3.1415/180))*blood[i].weappos);
+								vel_a_xy = angletovector(deltaangle(angle,random(-90,-75) + (j * 2.) - (bloodcount * 4.)),vel_a.x);
+								vel_a_transfer = (vel_a_xy.x,vel_a_xy.y,vel_a.y);
+								prt.vel = (frandom(-1.,1.),frandom(-1.,1.),frandom(-1.,0.5)) + vel + vel_a_transfer * (1.3 + (j * 0.2));
+								prt.size = random(4,(4+blood[i].blood ** 0.8) + j);
+								level.SpawnParticle(prt);
+							}
 						}
 					}
 				}
@@ -613,6 +671,7 @@ class doso_marker:actor{
 		+NOCLIP
 		+NOGRAVITY
 		-SOLID
+		+NOBLOCKMAP
 		
 		//+BRIGHT
 		
