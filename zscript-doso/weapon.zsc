@@ -569,14 +569,54 @@ class doso_weap_w:actor abstract{
 				blood[random(0,2)].blood += bloodpartcl/2;
 			}
 		}
+		
+		float hitheight = (hitpos.z - hit.pos.z) / hit.height;
+		if(doso_debug)
+			A_Log("hitheight "..hitheight);
+		//a hit to the head
+		bool stuntarget = false;
+		if(hitheight > 0.6){
+			if(doso_debug)
+				A_Log("headshot!");
+			//deals increased blunt damage
+			bluntdmg *= 1.5;
+			totdmg = bluntdmg + sharpdmg;
+			//has increased knockback (for blunt damage only)
+			hit.mass *= 0.4;
+			//but also more of this knockback based on the weapon's velocity
+			hit.vel += (knock / (hit.mass/wpnmass)) * 3.;
+			//has a higher painchance based on blunt damage
+			//if this does proc then it has longer duration
+			int painc = random(hit.painchance,255);
+			if(bluntdmg > 120 - painc / 2.){
+				stuntarget = true;
+			}
+			
+			if(doso_debug){
+				A_Log(string.format("new strike dmg: %d (%d blunt)",totdmg,bluntdmg));
+				A_Log(string.format("pain bluntdmg threshold: %.1f",120 - painc / 2.));
+			}
+		}
+		
 		vector3 diff = level.vec3diff(pos,hitpos);
 		SetOrigin(hitpos,false);
 		hit.damagemobj(self,owner,bluntdmg,"blunt");
+		
+		//restore the actor's mass
+		if(hitheight > 0.6)
+			hit.mass /= 0.4;
+		
 		if(!hitpoint)
 			hit.damagemobj(self,owner,sharpdmg,"blade");
 		else
 			hit.damagemobj(self,owner,sharpdmg,"point");
 		SetOrigin(pos-diff,false);
+		
+		if(stuntarget && hit.health > 0){
+			hit.A_Pain();
+			hit.setstatelabel("pain");
+			hit.A_SetTics(hit.tics*8);
+		}
 	}
 	
 	//blood drip stuff
