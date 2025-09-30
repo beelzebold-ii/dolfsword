@@ -324,7 +324,17 @@ class doso_weap_w:actor abstract{
 		angle += vel_angle.x;
 		pitch += vel_angle.y;
 		
+		if(hitcooldown)
+			hitcooldown--;
+		
 		//now for collision detection.
+		trycollision();
+		
+		//drip blood!
+		trydripblood();
+	}
+	
+	bool trycollision(){
 		flinetracedata line_center;
 		flinetracedata line_haft_l;
 		flinetracedata line_haft_r;
@@ -361,14 +371,12 @@ class doso_weap_w:actor abstract{
 			drawlineparticles(line_center);
 		}
 		
-		if(hitcooldown)
-			hitcooldown--;
 		if(line_center.hittype!=TRACE_HITNONE){
 			wpncollide(line_center);
+			return true;
 		}
 		
-		//drip blood!
-		trydripblood();
+		return false;
 	}
 	
 	//cooldown before exiting an enemy's collision before allowed to deal damage again; only 2 tics
@@ -511,7 +519,8 @@ class doso_weap_w:actor abstract{
 		
 		float bluntdmg = (((force - 5.) * (1.0 - sharpness + 0.1)) ** 1.4) * 0.1;
 		float sharpdmg = ((force + 2) * sharpness) ** 0.8;
-		sharpdmg *= 2.;
+		bluntdmg *= 1.5;
+		sharpdmg *= 3.0;
 		if(hitpoint){
 			bluntdmg *= 0.6;
 			//thinner spike = deeper thrust = more damage
